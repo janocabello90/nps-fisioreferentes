@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Star, Phone, ArrowRight, CheckCircle2, Zap } from 'lucide-react'
+import { BarChart3, Star, Phone, ArrowRight, CheckCircle2, Zap } from 'lucide-react'
 import FRLogo from '../components/FRLogo'
 
 export default function LandingPage() {
