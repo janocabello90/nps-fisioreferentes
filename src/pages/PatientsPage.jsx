@@ -6,6 +6,7 @@ import {
   ArrowLeft, Plus, Copy, Check, Search, User, TrendingUp,
   TrendingDown, Minus, ChevronDown, ChevronUp, X, ExternalLink
 } from 'lucide-react'
+import FRLogo from '../components/FRLogo'
 
 export default function PatientsPage() {
   const { clinic } = useAuth()
@@ -121,6 +122,8 @@ export default function PatientsPage() {
             <Link to="/panel" className="text-gray-400 hover:text-gray-600">
               <ArrowLeft className="w-5 h-5" />
             </Link>
+            <FRLogo size="sm" variant="compact" />
+            <div className="h-5 w-px bg-gray-200"></div>
             <span className="font-semibold text-gray-800">Pacientes</span>
             <span className="text-sm text-gray-400">({patients.length})</span>
           </div>

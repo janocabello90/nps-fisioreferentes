@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { Star, Phone, MessageSquare, ExternalLink, CheckCircle2, AlertCircle, User } from 'lucide-react'
+import { Star, Phone, MessageSquare, ExternalLink, CheckCircle2, AlertCircle, User, BarChart3 } from 'lucide-react'
 
 const STEPS = {
   IDENTIFY: 'identify',
@@ -615,9 +615,10 @@ export default function SurveyPage() {
         )}
 
         {/* Footer */}
-        <p className="text-center text-xs text-gray-300 mt-6">
-          Powered by <span className="font-medium">FisioReferentes</span>
-        </p>
+        <div className="flex items-center justify-center gap-1.5 mt-6 text-xs text-gray-300">
+          <BarChart3 className="w-3.5 h-3.5" />
+          <span>Powered by <span className="font-medium">FisioReferentes</span></span>
+        </div>
       </div>
     </div>
   )

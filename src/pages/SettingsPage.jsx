@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
 import { ArrowLeft, Save, CheckCircle2, AlertCircle, Palette, Link2, Image, MessageSquare, Users, Plus, X } from 'lucide-react'
+import FRLogo from '../components/FRLogo'
 
 export default function SettingsPage() {
   const { clinic, refreshClinic } = useAuth()
@@ -96,6 +97,8 @@ export default function SettingsPage() {
           <Link to="/panel" className="text-gray-400 hover:text-gray-600">
             <ArrowLeft className="w-5 h-5" />
           </Link>
+          <FRLogo size="sm" variant="compact" />
+          <div className="h-5 w-px bg-gray-200"></div>
           <span className="font-semibold text-gray-800">Ajustes de la clínica</span>
         </div>
       </nav>

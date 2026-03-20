@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { BarChart3, Star, Phone, ArrowRight, CheckCircle2, Zap } from 'lucide-react'
+import { Star, Phone, ArrowRight, CheckCircle2, Zap } from 'lucide-react'
+import FRLogo from '../components/FRLogo'
 
 export default function LandingPage() {
   return (
@@ -7,10 +8,7 @@ export default function LandingPage() {
       {/* Header */}
       <nav className="border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-brand-600" />
-            <span className="font-bold text-gray-800">NPS<span className="text-brand-600">Fisio</span></span>
-          </div>
+          <FRLogo size="lg" variant="full" />
           <div className="flex items-center gap-3">
             <Link to="/login" className="text-sm text-gray-600 hover:text-gray-800 font-medium">
               Acceder
@@ -25,7 +23,7 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="max-w-3xl mx-auto px-4 py-20 text-center">
         <div className="inline-flex items-center gap-2 text-sm text-brand-600 bg-brand-50 rounded-full px-4 py-1.5 mb-6">
-          <Zap className="w-4 h-4" /> by FisioReferentes
+          <Zap className="w-4 h-4" /> Un producto de FisioReferentes
         </div>
         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
           Mide la satisfacción de tus pacientes y convierte promotores en reseñas
@@ -115,8 +113,9 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 text-center text-sm text-gray-400">
-        <p>NPSFisio — Un producto de <span className="font-medium">FisioReferentes</span></p>
+      <footer className="py-8 flex flex-col items-center gap-2">
+        <FRLogo size="sm" variant="compact" />
+        <p className="text-xs text-gray-400">Un producto de <span className="font-medium">FisioReferentes</span></p>
       </footer>
     </div>
   )

@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
 import {
-  BarChart3, Settings, LogOut, Phone, MessageSquare,
+  Settings, LogOut, Phone, MessageSquare,
   TrendingUp, TrendingDown, Minus, Users, Copy, Check,
   ChevronDown, ChevronUp, Filter
 } from 'lucide-react'
+import FRLogo from '../components/FRLogo'
 
 export default function DashboardPage() {
   const { clinic, signOut, user } = useAuth()
@@ -150,7 +151,9 @@ export default function DashboardPage() {
       {/* Top nav */}
       <nav className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <FRLogo size="md" variant="compact" />
+            <div className="h-6 w-px bg-gray-200"></div>
             {clinic?.logo_url && (
               <img src={clinic.logo_url} alt="" className="h-8 object-contain" />
             )}

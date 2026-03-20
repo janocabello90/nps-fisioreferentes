@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Building2, AlertCircle } from 'lucide-react'
+import FRLogo from '../components/FRLogo'
 
 function slugify(text) {
   return text
@@ -81,8 +82,8 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-brand-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-7 h-7 text-brand-600" />
+          <div className="flex justify-center mb-4">
+            <FRLogo size="xl" variant="full" />
           </div>
           <h1 className="text-2xl font-bold text-gray-800">Registra tu clínica</h1>
           <p className="text-gray-500 text-sm mt-1">Crea tu sistema NPS en 2 minutos</p>
@@ -179,6 +180,10 @@ export default function RegisterPage() {
             Inicia sesión
           </Link>
         </p>
+
+        <div className="flex justify-center mt-6">
+          <FRLogo size="sm" variant="badge" />
+        </div>
       </div>
     </div>
   )
