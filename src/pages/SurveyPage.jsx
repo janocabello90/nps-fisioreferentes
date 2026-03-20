@@ -131,21 +131,50 @@ export default function SurveyPage() {
     setSubmitting(true)
 
     try {
-      // Create or find patient
-      const { data: newPatient, error: patientError } = await supabase
-        .from('patients')
-        .insert({
-          clinic_id: clinic.id,
-          name: patientName.trim(),
-          email: patientEmail.trim() || null
-        })
-        .select()
-        .single()
+      const emailTrimmed = patientEmail.trim().toLowerCase() || null
+      let foundPatient = null
 
-      if (patientError) throw patientError
-      setPatient(newPatient)
+      // If email provided, try to find existing patient in this clinic
+      if (emailTrimmed) {
+        const { data: existing } = await supabase
+          .from('patients')
+          .select('*')
+          .eq('clinic_id', clinic.id)
+          .eq('email', emailTrimmed)
+          .single()
+
+        if (existing) {
+          foundPatient = existing
+          // Update name if it changed
+          if (existing.name !== patientName.trim()) {
+            await supabase
+              .from('patients')
+              .update({ name: patientName.trim() })
+              .eq('id', existing.id)
+            foundPatient.name = patientName.trim()
+          }
+        }
+      }
+
+      // No existing patient found → create new one
+      if (!foundPatient) {
+        const { data: newPatient, error: patientError } = await supabase
+          .from('patients')
+          .insert({
+            clinic_id: clinic.id,
+            name: patientName.trim(),
+            email: emailTrimmed
+          })
+          .select()
+          .single()
+
+        if (patientError) throw patientError
+        foundPatient = newPatient
+      }
+
+      setPatient(foundPatient)
     } catch (err) {
-      console.error('Error creating patient:', err)
+      console.error('Error creating/finding patient:', err)
       // Continue anyway, response will just not have patient_id
     }
 
