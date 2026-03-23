@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import {
   Settings, LogOut, Phone, MessageSquare,
   TrendingUp, TrendingDown, Minus, Users, Copy, Check,
-  ChevronDown, ChevronUp, Filter
+  ChevronDown, ChevronUp, Filter, Plus, UserPlus, BarChart3
 } from 'lucide-react'
 import FRLogo from '../components/FRLogo'
 
@@ -17,6 +17,14 @@ export default function DashboardPage() {
   const [timeRange, setTimeRange] = useState('30') // days
   const [copied, setCopied] = useState(false)
   const [expandedRow, setExpandedRow] = useState(null)
+
+  // Quick add patient
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const [qpName, setQpName] = useState('')
+  const [qpEmail, setQpEmail] = useState('')
+  const [qpPhone, setQpPhone] = useState('')
+  const [qpAdding, setQpAdding] = useState(false)
+  const [qpResult, setQpResult] = useState(null) // { token, name, isExisting }
 
   useEffect(() => {
     if (clinic) fetchResponses()
@@ -132,6 +140,79 @@ export default function DashboardPage() {
     }
   }
 
+  async function quickAddPatient(e) {
+    e.preventDefault()
+    if (!qpName.trim()) return
+    setQpAdding(true)
+    setQpResult(null)
+
+    try {
+      const emailTrimmed = qpEmail.trim().toLowerCase() || null
+      let foundPatient = null
+      let isExisting = false
+
+      // Try to find by email first
+      if (emailTrimmed) {
+        const { data: existing } = await supabase
+          .from('patients')
+          .select('*')
+          .eq('clinic_id', clinic.id)
+          .eq('email', emailTrimmed)
+          .single()
+
+        if (existing) {
+          foundPatient = existing
+          isExisting = true
+          // Update name/phone if provided
+          const updates = {}
+          if (existing.name !== qpName.trim()) updates.name = qpName.trim()
+          if (qpPhone.trim() && !existing.phone) updates.phone = qpPhone.trim()
+          if (Object.keys(updates).length > 0) {
+            await supabase.from('patients').update(updates).eq('id', existing.id)
+          }
+        }
+      }
+
+      if (!foundPatient) {
+        const { data: newPatient, error } = await supabase
+          .from('patients')
+          .insert({
+            clinic_id: clinic.id,
+            name: qpName.trim(),
+            email: emailTrimmed,
+            phone: qpPhone.trim() || null
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+        foundPatient = newPatient
+      }
+
+      setQpResult({ token: foundPatient.token, name: foundPatient.name, isExisting })
+      setQpName('')
+      setQpEmail('')
+      setQpPhone('')
+    } catch (err) {
+      console.error('Error creating patient:', err)
+    }
+    setQpAdding(false)
+  }
+
+  function copyPatientUrl(token) {
+    const url = `${window.location.origin}/encuesta/${clinic?.slug}/p/${token}`
+    try {
+      navigator.clipboard.writeText(url).then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }).catch(() => {
+        prompt('Copia este enlace:', url)
+      })
+    } catch {
+      prompt('Copia este enlace:', url)
+    }
+  }
+
   async function toggleCallbackDone(responseId, currentStatus) {
     await supabase
       .from('nps_responses')
@@ -174,18 +255,94 @@ export default function DashboardPage() {
       </nav>
 
       <div className="max-w-6xl mx-auto px-4 py-6">
-        {/* Survey URL */}
-        <div className="card mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium text-gray-700 mb-1">Enlace de tu encuesta</p>
-            <code className="text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded">
-              {window.location.origin}/encuesta/{clinic?.slug}
-            </code>
+        {/* Survey URL + Quick add patient */}
+        <div className="card mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-1">Enlace genérico (QR / recepción)</p>
+              <code className="text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded">
+                {window.location.origin}/encuesta/{clinic?.slug}
+              </code>
+            </div>
+            <button onClick={copySurveyUrl} className="btn-secondary text-sm flex items-center gap-1.5">
+              {copied && !qpResult ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+              {copied && !qpResult ? 'Copiado' : 'Copiar enlace'}
+            </button>
           </div>
-          <button onClick={copySurveyUrl} className="btn-secondary text-sm flex items-center gap-1.5">
-            {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-            {copied ? 'Copiado' : 'Copiar enlace'}
-          </button>
+
+          <div className="border-t border-gray-100 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                <UserPlus className="w-4 h-4 text-gray-400" />
+                Enlace personalizado por paciente
+              </p>
+              <button
+                onClick={() => { setShowQuickAdd(!showQuickAdd); setQpResult(null) }}
+                className="btn-primary text-xs flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" /> Crear paciente
+              </button>
+            </div>
+
+            {showQuickAdd && (
+              <form onSubmit={quickAddPatient} className="bg-gray-50 rounded-lg p-4 mb-3">
+                <div className="grid sm:grid-cols-3 gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={qpName}
+                    onChange={e => setQpName(e.target.value)}
+                    placeholder="Nombre *"
+                    className="input-field text-sm"
+                    required
+                    autoFocus
+                  />
+                  <input
+                    type="email"
+                    value={qpEmail}
+                    onChange={e => setQpEmail(e.target.value)}
+                    placeholder="Email (opcional)"
+                    className="input-field text-sm"
+                  />
+                  <input
+                    type="tel"
+                    value={qpPhone}
+                    onChange={e => setQpPhone(e.target.value)}
+                    placeholder="Teléfono (opcional)"
+                    className="input-field text-sm"
+                  />
+                </div>
+                <button type="submit" disabled={qpAdding || !qpName.trim()} className="btn-primary text-sm">
+                  {qpAdding ? 'Creando...' : 'Crear y generar enlace'}
+                </button>
+              </form>
+            )}
+
+            {qpResult && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-green-800 font-medium">
+                    {qpResult.isExisting
+                      ? `"${qpResult.name}" ya existía — enlace actualizado`
+                      : `Paciente "${qpResult.name}" creado`}
+                  </p>
+                  <code className="text-xs text-green-600 mt-1 block break-all">
+                    {window.location.origin}/encuesta/{clinic?.slug}/p/{qpResult.token}
+                  </code>
+                </div>
+                <button
+                  onClick={() => copyPatientUrl(qpResult.token)}
+                  className="btn-secondary text-xs flex items-center gap-1 flex-shrink-0"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'Copiado' : 'Copiar enlace'}
+                </button>
+              </div>
+            )}
+
+            <p className="text-xs text-gray-400 mt-2">
+              Crea pacientes y envíales su enlace personalizado por WhatsApp. Su NPS quedará vinculado a su perfil.
+            </p>
+          </div>
         </div>
 
         {/* Stats cards */}
