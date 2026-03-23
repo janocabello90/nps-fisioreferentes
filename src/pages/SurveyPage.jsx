@@ -92,4 +92,407 @@ export default function SurveyPage() {
     setLoading(false)
   }
 
-  function getScoreCategory
+  function getScoreCategory(s) {
+    if (s <= 6) return 'detractor'
+    if (s <= 8) return 'passive'
+    return 'promoter'
+  }
+
+  function getScoreColorClass(s) {
+    if (s <= 6) return 'detractor'
+    if (s <= 8) return 'passive'
+    return 'promoter'
+  }
+
+  function toggleStaffMember(name) {
+    setStaffMembers(prev =>
+      prev.includes(name)
+        ? prev.filter(m => m !== name)
+        : [...prev, name]
+    )
+  }
+
+  function handleStaffSubmit() {
+    setStep(STEPS.SCORE)
+  }
+
+  async function handleScoreSelect(selectedScore) {
+    setScore(selectedScore)
+  }
+
+  async function handleScoreSubmit() {
+    if (score === null) return
+    setSubmitting(true)
+
+    try {
+      const { data, error } = await supabase
+        .from('nps_responses')
+        .insert({
+          clinic_id: clinic.id,
+          score: score,
+          category: getScoreCategory(score),
+          staff_members: staffMembers.length > 0 ? staffMembers : null,
+          patient_id: patient?.id || null
+        })
+        .select('id')
+        .single()
+
+      if (error) throw error
+      setResponseId(data.id)
+
+      const category = getScoreCategory(score)
+      if (category === 'promoter') {
+        setStep(STEPS.REDIRECT_REVIEW)
+      } else {
+        setStep(STEPS.FEEDBACK)
+      }
+    } catch (err) {
+      console.error('Error saving score:', err)
+      const category = getScoreCategory(score)
+      if (category === 'promoter') {
+        setStep(STEPS.REDIRECT_REVIEW)
+      } else {
+        setStep(STEPS.FEEDBACK)
+      }
+    }
+    setSubmitting(false)
+  }
+
+  async function handleFeedbackSubmit() {
+    setSubmitting(true)
+    try {
+      if (responseId) {
+        await supabase
+          .from('nps_responses')
+          .update({ feedback_text: feedback })
+          .eq('id', responseId)
+      }
+    } catch (err) {
+      console.error('Error saving feedback:', err)
+    }
+    setStep(STEPS.PHONE)
+    setSubmitting(false)
+  }
+
+  async function handlePhoneSubmit(skipPhone = false) {
+    setSubmitting(true)
+    try {
+      if (responseId && !skipPhone && phone.trim()) {
+        await supabase
+          .from('nps_responses')
+          .update({ phone_number: phone.trim(), wants_callback: true })
+          .eq('id', responseId)
+
+        if (patient && !patient.phone) {
+          await supabase
+            .from('patients')
+            .update({ phone: phone.trim() })
+            .eq('id', patient.id)
+        } else if (!patient && clinic) {
+          const { data: existingByPhone } = await supabase
+            .from('patients')
+            .select('id')
+            .eq('clinic_id', clinic.id)
+            .eq('phone', phone.trim())
+            .single()
+
+          if (existingByPhone && responseId) {
+            await supabase
+              .from('nps_responses')
+              .update({ patient_id: existingByPhone.id })
+              .eq('id', responseId)
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error saving phone:', err)
+    }
+    setStep(STEPS.THANK_YOU)
+    setSubmitting(false)
+  }
+
+  function handleGoogleReviewRedirect() {
+    if (clinic?.google_review_url) {
+      window.open(clinic.google_review_url, '_blank')
+    }
+  }
+
+  if (loading || !step) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="card text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    )
+  }
+
+  const brandColor = clinic?.primary_color || '#0074c5'
+  const hasTeam = clinic?.team_members && clinic.team_members.length > 0
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-lg">
+        <div className="text-center mb-6">
+          {clinic?.logo_url && (
+            <img src={clinic.logo_url} alt={clinic.name} className="h-16 mx-auto mb-3 object-contain" />
+          )}
+          <h1 className="text-xl font-semibold text-gray-800">{clinic?.name}</h1>
+          {patient && (
+            <p className="text-sm text-gray-400 mt-1">Hola, {patient.name}</p>
+          )}
+        </div>
+
+        {step === STEPS.STAFF && hasTeam && (
+          <div className="card animate-fadeIn">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <User className="w-7 h-7 text-brand-600" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                ¿Quién del equipo te ha atendido?
+              </h2>
+              <p className="text-gray-400 text-sm">Puedes seleccionar más de uno</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {clinic.team_members.map(name => (
+                <button
+                  key={name}
+                  onClick={() => toggleStaffMember(name)}
+                  className={`py-3 px-4 rounded-lg border-2 text-sm font-medium transition-all ${
+                    staffMembers.includes(name)
+                      ? 'border-brand-500 bg-brand-50 text-brand-700'
+                      : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {staffMembers.includes(name) && '✓ '}{name}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => { setStaffMembers([]); handleStaffSubmit() }}
+              className="w-full text-center text-sm text-gray-400 mb-4 hover:text-gray-600"
+            >
+              No lo recuerdo
+            </button>
+
+            <button
+              onClick={handleStaffSubmit}
+              disabled={staffMembers.length === 0}
+              className="btn-primary w-full"
+              style={{ backgroundColor: staffMembers.length > 0 ? brandColor : undefined }}
+            >
+              Continuar
+            </button>
+          </div>
+        )}
+
+        {step === STEPS.SCORE && (
+          <div className="card animate-fadeIn">
+            <div className="text-center mb-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                {clinic?.welcome_message || '¿Cómo ha sido tu experiencia?'}
+              </h2>
+              <p className="text-gray-500 text-sm">
+                Del 0 al 10, ¿cuánto recomendarías nuestra clínica a un amigo o familiar?
+              </p>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-2 mb-6">
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                <button
+                  key={n}
+                  onClick={() => handleScoreSelect(n)}
+                  className={`nps-score-btn ${getScoreColorClass(n)} ${score === n ? 'selected' : ''}`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex justify-between text-xs text-gray-400 mb-6 px-1">
+              <span>Nada probable</span>
+              <span>Muy probable</span>
+            </div>
+
+            <button
+              onClick={handleScoreSubmit}
+              disabled={score === null || submitting}
+              className="btn-primary w-full"
+              style={{ backgroundColor: score !== null ? brandColor : undefined }}
+            >
+              {submitting ? 'Enviando...' : 'Continuar'}
+            </button>
+          </div>
+        )}
+
+        {step === STEPS.FEEDBACK && (
+          <div className="card animate-fadeIn">
+            <div className="text-center mb-6">
+              {score === 8 && <FiveStars />}
+
+              {getScoreCategory(score) === 'detractor' ? (
+                <>
+                  <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="w-7 h-7 text-red-600" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                    Vaya, parece que algo ha ido mal
+                  </h2>
+                  <p className="text-gray-500 text-sm">
+                    Lamentamos lo sucedido. ¿Podría contarnos más cuál ha sido el problema?
+                  </p>
+                </>
+              ) : (
+                <>
+                  {score !== 8 && (
+                    <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MessageSquare className="w-7 h-7 text-yellow-600" />
+                    </div>
+                  )}
+                  <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                    Muchas gracias por su opinión
+                  </h2>
+                  <p className="text-gray-500 text-sm">
+                    ¿Podría decirnos qué tendríamos que mejorar para que nuestra próxima nota sea un 10?
+                  </p>
+                </>
+              )}
+            </div>
+
+            <textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="Escribe aquí tu comentario..."
+              rows={4}
+              className="input-field resize-none mb-4"
+              autoFocus
+            />
+
+            <button
+              onClick={handleFeedbackSubmit}
+              disabled={submitting}
+              className="btn-primary w-full"
+              style={{ backgroundColor: brandColor }}
+            >
+              {submitting ? 'Enviando...' : 'Continuar'}
+            </button>
+
+            <button
+              onClick={() => { setStep(STEPS.PHONE) }}
+              className="w-full text-center text-sm text-gray-400 mt-3 hover:text-gray-600"
+            >
+              Prefiero no comentar
+            </button>
+          </div>
+        )}
+
+        {step === STEPS.PHONE && (
+          <div className="card animate-fadeIn">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Phone className="w-7 h-7 text-brand-600" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                ¿Querría que le llamemos?
+              </h2>
+              <p className="text-gray-500 text-sm">
+                Deje su número de teléfono y alguien del equipo le llamará para tratar de solucionar el problema.
+              </p>
+            </div>
+
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Ej: 612 345 678"
+              className="input-field mb-4"
+              autoFocus
+            />
+
+            <button
+              onClick={() => handlePhoneSubmit(false)}
+              disabled={submitting || !phone.trim()}
+              className="btn-primary w-full"
+              style={{ backgroundColor: brandColor }}
+            >
+              {submitting ? 'Enviando...' : 'Enviar'}
+            </button>
+
+            <button
+              onClick={() => handlePhoneSubmit(true)}
+              className="w-full text-center text-sm text-gray-400 mt-3 hover:text-gray-600"
+            >
+              No, gracias
+            </button>
+          </div>
+        )}
+
+        {step === STEPS.THANK_YOU && (
+          <div className="card animate-fadeIn text-center">
+            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-7 h-7 text-green-600" />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+              ¡Muchas gracias!
+            </h2>
+            <p className="text-gray-500 text-sm">
+              Su opinión es muy valiosa para nosotros. Nos ayuda a mejorar cada día.
+            </p>
+          </div>
+        )}
+
+        {step === STEPS.REDIRECT_REVIEW && (
+          <div className="card animate-fadeIn text-center">
+            <FiveStars />
+
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">
+              ¡Muchísimas gracias!
+            </h2>
+            <p className="text-gray-500 text-sm mb-6">
+              Nos alegra saber que ha tenido una buena experiencia.
+              Nos ayudan mucho sus reseñas de 5 estrellas. ¿Podría dejarnos una reseña en Google?
+            </p>
+
+            {clinic?.google_review_url ? (
+              <button
+                onClick={handleGoogleReviewRedirect}
+                className="btn-primary w-full flex items-center justify-center gap-2"
+                style={{ backgroundColor: brandColor }}
+              >
+                <Star className="w-5 h-5" />
+                Dejar reseña en Google
+                <ExternalLink className="w-4 h-4" />
+              </button>
+            ) : (
+              <p className="text-gray-400 text-sm">Enlace de reseñas no configurado.</p>
+            )}
+
+            <button
+              onClick={() => setStep(STEPS.THANK_YOU)}
+              className="w-full text-center text-sm text-gray-400 mt-3 hover:text-gray-600"
+            >
+              Prefiero no hacerlo ahora
+            </button>
+          </div>
+        )}
+
+        <div className="flex items-center justify-center gap-1.5 mt-6 text-xs text-gray-300">
+          <BarChart3 className="w-3.5 h-3.5" />
+          <span>Powered by <span className="font-medium">FisioReferentes</span></span>
+        </div>
+      </div>
+    </div>
+  )
+}
