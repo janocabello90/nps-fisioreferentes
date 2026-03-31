@@ -56,10 +56,6 @@ export default function DashboardPage() {
   const passives = responses.filter(r => r.category === 'passive')
   const promoters = responses.filter(r => r.category === 'promoter')
 
-  const npsScore = totalResponses > 0
-    ? Math.round(((promoters.length - detractors.length) / totalResponses) * 100)
-    : 0
-
   const avgScore = totalResponses > 0
     ? (responses.reduce((sum, r) => sum + r.score, 0) / totalResponses).toFixed(1)
     : 0
@@ -83,20 +79,19 @@ export default function DashboardPage() {
     return Object.entries(map).map(([name, data]) => {
       const total = data.scores.length
       const avg = (data.scores.reduce((s, v) => s + v, 0) / total).toFixed(1)
-      const nps = Math.round(((data.promoters - data.detractors) / total) * 100)
-      return { name, total, avg, nps, ...data }
-    }).sort((a, b) => b.nps - a.nps)
+      return { name, total, avg, ...data }
+    }).sort((a, b) => parseFloat(b.avg) - parseFloat(a.avg))
   })()
 
-  function getNpsColor(score) {
-    if (score >= 50) return 'text-green-600'
-    if (score >= 0) return 'text-yellow-600'
+  function getScoreColor(score) {
+    if (score >= 8) return 'text-green-600'
+    if (score >= 6) return 'text-yellow-600'
     return 'text-red-600'
   }
 
-  function getNpsBg(score) {
-    if (score >= 50) return 'bg-green-50 border-green-200'
-    if (score >= 0) return 'bg-yellow-50 border-yellow-200'
+  function getScoreBg(score) {
+    if (score >= 8) return 'bg-green-50 border-green-200'
+    if (score >= 6) return 'bg-yellow-50 border-yellow-200'
     return 'bg-red-50 border-red-200'
   }
 
@@ -346,14 +341,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div className={`card border ${getNpsBg(npsScore)}`}>
-            <p className="text-xs text-gray-500 mb-1">NPS Score</p>
-            <p className={`text-3xl font-bold ${getNpsColor(npsScore)}`}>{npsScore}</p>
-          </div>
-          <div className="card">
-            <p className="text-xs text-gray-500 mb-1">Media</p>
-            <p className="text-3xl font-bold text-gray-800">{avgScore}</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className={`card border ${getScoreBg(parseFloat(avgScore))}`}>
+            <p className="text-xs text-gray-500 mb-1">Puntuación NPS</p>
+            <p className={`text-3xl font-bold ${getScoreColor(parseFloat(avgScore))}`}>{avgScore}<span className="text-lg font-normal text-gray-400">/10</span></p>
           </div>
           <div className="card">
             <p className="text-xs text-gray-500 mb-1">Respuestas</p>
@@ -390,11 +381,11 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium text-gray-800 text-sm">{staff.name}</span>
                     <span className={`text-lg font-bold ${
-                      staff.nps >= 50 ? 'text-green-600' :
-                      staff.nps >= 0 ? 'text-yellow-600' :
+                      parseFloat(staff.avg) >= 8 ? 'text-green-600' :
+                      parseFloat(staff.avg) >= 6 ? 'text-yellow-600' :
                       'text-red-600'
                     }`}>
-                      {staff.nps}
+                      {staff.avg}
                     </span>
                   </div>
                   {/* Bar */}
@@ -423,7 +414,6 @@ export default function DashboardPage() {
                     )}
                   </div>
                   <div className="flex justify-between text-[10px] text-gray-400">
-                    <span>Media: {staff.avg}</span>
                     <span>{staff.total} resp.</span>
                     <span>
                       <span className="text-red-500">{staff.detractors}</span>

@@ -12,6 +12,7 @@ const STEPS = {
   REDIRECT_REVIEW: 'redirect_review'
 }
 
+// Animated 5-star component (psychological bias for 8-10 scores)
 function FiveStars() {
   return (
     <div className="flex justify-center gap-1 mb-4">
@@ -56,6 +57,7 @@ export default function SurveyPage() {
 
   async function fetchClinicAndPatient() {
     try {
+      // 1. Fetch clinic
       const { data: clinicData, error: clinicError } = await supabase
         .from('clinics')
         .select('id, name, slug, logo_url, google_review_url, primary_color, welcome_message, team_members')
@@ -72,6 +74,7 @@ export default function SurveyPage() {
       const hasTeam = clinicData.team_members && clinicData.team_members.length > 0
       const firstStep = hasTeam ? STEPS.STAFF : STEPS.SCORE
 
+      // 2. If there's a patient token, fetch the patient
       if (patientToken) {
         const { data: patientData } = await supabase
           .from('patients')
@@ -83,8 +86,10 @@ export default function SurveyPage() {
         if (patientData) {
           setPatient(patientData)
         }
+        // Whether token is valid or not, skip identification
       }
 
+      // Always go directly to staff or score — no identification step
       setStep(firstStep)
     } catch (err) {
       setError('Error al cargar la encuesta.')
@@ -183,12 +188,16 @@ export default function SurveyPage() {
           .update({ phone_number: phone.trim(), wants_callback: true })
           .eq('id', responseId)
 
+        // If this is an anonymous NPS (no patient linked), try to find a patient by phone
+        // or save the phone to the existing patient
         if (patient && !patient.phone) {
+          // Known patient without phone — save it
           await supabase
             .from('patients')
             .update({ phone: phone.trim() })
             .eq('id', patient.id)
         } else if (!patient && clinic) {
+          // Anonymous NPS — try to find patient by phone in this clinic
           const { data: existingByPhone } = await supabase
             .from('patients')
             .select('id')
@@ -197,6 +206,7 @@ export default function SurveyPage() {
             .single()
 
           if (existingByPhone && responseId) {
+            // Link this response to the found patient
             await supabase
               .from('nps_responses')
               .update({ patient_id: existingByPhone.id })
@@ -217,6 +227,7 @@ export default function SurveyPage() {
     }
   }
 
+  // --- LOADING & ERROR STATES ---
   if (loading || !step) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -238,10 +249,12 @@ export default function SurveyPage() {
 
   const brandColor = clinic?.primary_color || '#0074c5'
   const hasTeam = clinic?.team_members && clinic.team_members.length > 0
+  const showStars = score !== null && score >= 8
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-lg">
+        {/* Clinic header */}
         <div className="text-center mb-6">
           {clinic?.logo_url && (
             <img src={clinic.logo_url} alt={clinic.name} className="h-16 mx-auto mb-3 object-contain" />
@@ -252,6 +265,7 @@ export default function SurveyPage() {
           )}
         </div>
 
+        {/* --- STEP: STAFF MEMBER (multi-select) --- */}
         {step === STEPS.STAFF && hasTeam && (
           <div className="card animate-fadeIn">
             <div className="text-center mb-6">
@@ -298,6 +312,7 @@ export default function SurveyPage() {
           </div>
         )}
 
+        {/* --- STEP: SCORE --- */}
         {step === STEPS.SCORE && (
           <div className="card animate-fadeIn">
             <div className="text-center mb-6">
@@ -337,6 +352,7 @@ export default function SurveyPage() {
           </div>
         )}
 
+        {/* --- STEP: FEEDBACK (Detractors 0-6 & Passives 7-8) --- */}
         {step === STEPS.FEEDBACK && (
           <div className="card animate-fadeIn">
             <div className="text-center mb-6">
@@ -398,6 +414,7 @@ export default function SurveyPage() {
           </div>
         )}
 
+        {/* --- STEP: PHONE (Detractors & Passives) --- */}
         {step === STEPS.PHONE && (
           <div className="card animate-fadeIn">
             <div className="text-center mb-6">
@@ -439,6 +456,7 @@ export default function SurveyPage() {
           </div>
         )}
 
+        {/* --- STEP: THANK YOU --- */}
         {step === STEPS.THANK_YOU && (
           <div className="card animate-fadeIn text-center">
             <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -453,6 +471,7 @@ export default function SurveyPage() {
           </div>
         )}
 
+        {/* --- STEP: REDIRECT TO GOOGLE REVIEWS (Promoters 9-10) --- */}
         {step === STEPS.REDIRECT_REVIEW && (
           <div className="card animate-fadeIn text-center">
             <FiveStars />
@@ -488,6 +507,7 @@ export default function SurveyPage() {
           </div>
         )}
 
+        {/* Footer */}
         <div className="flex items-center justify-center gap-1.5 mt-6 text-xs text-gray-300">
           <BarChart3 className="w-3.5 h-3.5" />
           <span>Powered by <span className="font-medium">FisioReferentes</span></span>
