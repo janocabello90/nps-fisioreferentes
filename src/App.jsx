@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage'
 import SettingsPage from './pages/SettingsPage'
 import PatientsPage from './pages/PatientsPage'
 import LandingPage from './pages/LandingPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -33,6 +34,7 @@ export default function App() {
       {/* Auth */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registro" element={<RegisterPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Protected: Clinic admin */}
       <Route path="/panel" element={
