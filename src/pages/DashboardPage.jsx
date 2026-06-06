@@ -8,6 +8,7 @@ import {
   ChevronDown, ChevronUp, Filter, Plus, UserPlus, BarChart3, Trash2
 } from 'lucide-react'
 import FRLogo from '../components/FRLogo'
+import AnnouncementModal from '../components/AnnouncementModal'
 
 export default function DashboardPage() {
   const { clinic, signOut, user } = useAuth()
@@ -233,6 +234,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <AnnouncementModal />
       {/* Top nav */}
       <nav className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
