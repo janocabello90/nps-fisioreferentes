@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import {
   Settings, LogOut, Phone, MessageSquare,
   TrendingUp, TrendingDown, Minus, Users, Copy, Check,
-  ChevronDown, ChevronUp, Filter, Plus, UserPlus, BarChart3
+  ChevronDown, ChevronUp, Filter, Plus, UserPlus, BarChart3, Trash2
 } from 'lucide-react'
 import FRLogo from '../components/FRLogo'
 
@@ -212,6 +212,15 @@ export default function DashboardPage() {
     await supabase
       .from('nps_responses')
       .update({ callback_done: !currentStatus })
+      .eq('id', responseId)
+    fetchResponses()
+  }
+
+  async function deleteResponse(responseId) {
+    if (!window.confirm('¿Eliminar esta valoración? Esta acción no se puede deshacer.')) return
+    await supabase
+      .from('nps_responses')
+      .delete()
       .eq('id', responseId)
     fetchResponses()
   }
@@ -493,6 +502,7 @@ export default function DashboardPage() {
                     <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Comentario</th>
                     <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Teléfono</th>
                     <th className="text-center text-xs font-medium text-gray-500 px-4 py-3">Llamada</th>
+                    <th className="text-center text-xs font-medium text-gray-500 px-4 py-3 w-10"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -558,6 +568,15 @@ export default function DashboardPage() {
                         ) : (
                           <span className="text-gray-300">—</span>
                         )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => deleteResponse(r.id)}
+                          className="text-gray-300 hover:text-red-500 transition-colors p-1"
+                          title="Eliminar valoración"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}

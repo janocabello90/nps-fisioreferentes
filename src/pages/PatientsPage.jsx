@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
 import {
   ArrowLeft, Plus, Copy, Check, Search, User, TrendingUp,
-  TrendingDown, Minus, ChevronDown, ChevronUp, X, ExternalLink
+  TrendingDown, Minus, ChevronDown, ChevronUp, X, ExternalLink, Trash2
 } from 'lucide-react'
 import FRLogo from '../components/FRLogo'
 
@@ -63,6 +63,28 @@ export default function PatientsPage() {
       fetchPatients()
     }
     setAdding(false)
+  }
+
+  async function deletePatient(patient) {
+    const totalResponses = patient.nps_responses?.length || 0
+    const msg = totalResponses > 0
+      ? `¿Eliminar a "${patient.name}" y sus ${totalResponses} valoraciones? Esta acción no se puede deshacer.`
+      : `¿Eliminar a "${patient.name}"? Esta acción no se puede deshacer.`
+    if (!window.confirm(msg)) return
+
+    // Delete responses first (foreign key)
+    if (totalResponses > 0) {
+      await supabase
+        .from('nps_responses')
+        .delete()
+        .eq('patient_id', patient.id)
+    }
+    // Then delete patient
+    await supabase
+      .from('patients')
+      .delete()
+      .eq('id', patient.id)
+    fetchPatients()
   }
 
   function getPatientSurveyUrl(token) {
@@ -275,6 +297,14 @@ export default function PatientsPage() {
                           }
                         </button>
                       )}
+
+                      <button
+                        onClick={() => deletePatient(patient)}
+                        className="text-gray-300 hover:text-red-500 transition-colors p-1"
+                        title="Eliminar paciente"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
 
