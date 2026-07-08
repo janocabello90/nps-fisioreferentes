@@ -4,7 +4,6 @@
 const translations = {
   es: {
     label: 'Español',
-    flag: '🇪🇸',
     // Staff step
     staffTitle: '¿Quién del equipo te ha atendido?',
     staffSubtitle: 'Puedes seleccionar más de uno',
@@ -47,7 +46,6 @@ const translations = {
 
   ca: {
     label: 'Català',
-    flag: '🏴',
     staffTitle: 'Qui de l\'equip t\'ha atès?',
     staffSubtitle: 'Pots seleccionar més d\'un',
     staffSkip: 'No ho recordo',
@@ -81,7 +79,6 @@ const translations = {
 
   eu: {
     label: 'Euskara',
-    flag: '🏴',
     staffTitle: 'Taldeko nork artatu zaitu?',
     staffSubtitle: 'Bat baino gehiago aukeratu dezakezu',
     staffSkip: 'Ez dut gogoratzen',
@@ -115,7 +112,6 @@ const translations = {
 
   gl: {
     label: 'Galego',
-    flag: '🏴',
     staffTitle: 'Quen do equipo te atendeu?',
     staffSubtitle: 'Podes seleccionar máis dun',
     staffSkip: 'Non o lembro',
@@ -154,6 +150,5 @@ export function getTranslations(lang) {
 
 export const LANGUAGES = Object.entries(translations).map(([code, t]) => ({
   code,
-  label: t.label,
-  flag: t.flag
+  label: t.label
 }))
