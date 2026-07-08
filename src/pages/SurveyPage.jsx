@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { getTranslations } from '../lib/translations'
+import { getTranslations, LANGUAGES } from '../lib/translations'
+import LangFlag from '../components/LangFlag'
 import { Star, Phone, MessageSquare, ExternalLink, CheckCircle2, AlertCircle, User, BarChart3 } from 'lucide-react'
 
 const STEPS = {
@@ -37,12 +38,36 @@ function FiveStars() {
   )
 }
 
+// Language switcher for patients
+function LanguageSwitcher({ currentLang, onChangeLang }) {
+  return (
+    <div className="flex items-center justify-center gap-1.5 mb-4">
+      {LANGUAGES.map(lang => (
+        <button
+          key={lang.code}
+          onClick={() => onChangeLang(lang.code)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            currentLang === lang.code
+              ? 'bg-gray-800 text-white shadow-sm'
+              : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'
+          }`}
+          title={lang.label}
+        >
+          <LangFlag code={lang.code} size={16} />
+          <span className="hidden sm:inline">{lang.label}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export default function SurveyPage() {
   const { clinicSlug, patientToken } = useParams()
   const [clinic, setClinic] = useState(null)
   const [patient, setPatient] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [currentLang, setCurrentLang] = useState('es')
   const [t, setT] = useState(getTranslations('es'))
 
   const [step, setStep] = useState(null)
@@ -56,6 +81,11 @@ export default function SurveyPage() {
   useEffect(() => {
     fetchClinicAndPatient()
   }, [clinicSlug, patientToken])
+
+  function handleChangeLang(langCode) {
+    setCurrentLang(langCode)
+    setT(getTranslations(langCode))
+  }
 
   async function fetchClinicAndPatient() {
     try {
@@ -72,7 +102,9 @@ export default function SurveyPage() {
         return
       }
       setClinic(clinicData)
-      setT(getTranslations(clinicData.survey_language || 'es'))
+      const defaultLang = clinicData.survey_language || 'es'
+      setCurrentLang(defaultLang)
+      setT(getTranslations(defaultLang))
 
       const hasTeam = clinicData.team_members && clinicData.team_members.length > 0
       const firstStep = hasTeam ? STEPS.STAFF : STEPS.SCORE
@@ -267,6 +299,9 @@ export default function SurveyPage() {
             <p className="text-sm text-gray-400 mt-1">{t.greeting}, {patient.name}</p>
           )}
         </div>
+
+        {/* Language switcher */}
+        <LanguageSwitcher currentLang={currentLang} onChangeLang={handleChangeLang} />
 
         {/* --- STEP: STAFF MEMBER (multi-select) --- */}
         {step === STEPS.STAFF && hasTeam && (

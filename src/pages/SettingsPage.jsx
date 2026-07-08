@@ -4,6 +4,7 @@ import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
 import { ArrowLeft, Save, CheckCircle2, AlertCircle, Palette, Link2, Image, MessageSquare, Users, Plus, X, Globe } from 'lucide-react'
 import FRLogo from '../components/FRLogo'
+import LangFlag from '../components/LangFlag'
 import { LANGUAGES } from '../lib/translations'
 
 export default function SettingsPage() {
@@ -276,7 +277,7 @@ export default function SettingsPage() {
                       : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                 >
-                  <span className="text-xl">{lang.flag}</span>
+                  <LangFlag code={lang.code} size={24} />
                   <span className={`text-sm font-medium ${
                     form.survey_language === lang.code ? 'text-brand-700' : 'text-gray-700'
                   }`}>
