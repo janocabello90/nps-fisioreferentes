@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
-import { ArrowLeft, Save, CheckCircle2, AlertCircle, Palette, Link2, Image, MessageSquare, Users, Plus, X } from 'lucide-react'
+import { ArrowLeft, Save, CheckCircle2, AlertCircle, Palette, Link2, Image, MessageSquare, Users, Plus, X, Globe } from 'lucide-react'
 import FRLogo from '../components/FRLogo'
+import { LANGUAGES } from '../lib/translations'
 
 export default function SettingsPage() {
   const { clinic, refreshClinic } = useAuth()
@@ -14,7 +15,8 @@ export default function SettingsPage() {
     google_review_url: '',
     logo_url: '',
     primary_color: '#0074c5',
-    welcome_message: ''
+    welcome_message: '',
+    survey_language: 'es'
   })
   const [teamMembers, setTeamMembers] = useState([])
   const [newMember, setNewMember] = useState('')
@@ -30,7 +32,8 @@ export default function SettingsPage() {
         google_review_url: clinic.google_review_url || '',
         logo_url: clinic.logo_url || '',
         primary_color: clinic.primary_color || '#0074c5',
-        welcome_message: clinic.welcome_message || ''
+        welcome_message: clinic.welcome_message || '',
+        survey_language: clinic.survey_language || 'es'
       })
       setTeamMembers(clinic.team_members || [])
     }
@@ -72,7 +75,8 @@ export default function SettingsPage() {
         logo_url: form.logo_url || null,
         primary_color: form.primary_color,
         welcome_message: form.welcome_message || null,
-        team_members: teamMembers
+        team_members: teamMembers,
+        survey_language: form.survey_language
       })
       .eq('id', clinic.id)
 
@@ -250,6 +254,37 @@ export default function SettingsPage() {
                 Si no añades miembros, la encuesta no preguntará quién atendió al paciente.
               </p>
             )}
+          </div>
+
+          {/* Language */}
+          <div className="card">
+            <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Globe className="w-4 h-4 text-gray-400" /> Idioma de la encuesta
+            </h3>
+            <p className="text-xs text-gray-400 mb-3">
+              Selecciona en qué idioma verán la encuesta tus pacientes.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {LANGUAGES.map(lang => (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={() => handleChange('survey_language', lang.code)}
+                  className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all text-left ${
+                    form.survey_language === lang.code
+                      ? 'border-brand-500 bg-brand-50 shadow-sm'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <span className="text-xl">{lang.flag}</span>
+                  <span className={`text-sm font-medium ${
+                    form.survey_language === lang.code ? 'text-brand-700' : 'text-gray-700'
+                  }`}>
+                    {lang.label}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Branding */}

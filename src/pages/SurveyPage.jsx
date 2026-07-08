@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { getTranslations } from '../lib/translations'
 import { Star, Phone, MessageSquare, ExternalLink, CheckCircle2, AlertCircle, User, BarChart3 } from 'lucide-react'
 
 const STEPS = {
@@ -42,6 +43,7 @@ export default function SurveyPage() {
   const [patient, setPatient] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [t, setT] = useState(getTranslations('es'))
 
   const [step, setStep] = useState(null)
   const [staffMembers, setStaffMembers] = useState([])
@@ -60,7 +62,7 @@ export default function SurveyPage() {
       // 1. Fetch clinic
       const { data: clinicData, error: clinicError } = await supabase
         .from('clinics')
-        .select('id, name, slug, logo_url, google_review_url, primary_color, welcome_message, team_members')
+        .select('id, name, slug, logo_url, google_review_url, primary_color, welcome_message, team_members, survey_language')
         .eq('slug', clinicSlug)
         .single()
 
@@ -70,6 +72,7 @@ export default function SurveyPage() {
         return
       }
       setClinic(clinicData)
+      setT(getTranslations(clinicData.survey_language || 'es'))
 
       const hasTeam = clinicData.team_members && clinicData.team_members.length > 0
       const firstStep = hasTeam ? STEPS.STAFF : STEPS.SCORE
@@ -261,7 +264,7 @@ export default function SurveyPage() {
           )}
           <h1 className="text-xl font-semibold text-gray-800">{clinic?.name}</h1>
           {patient && (
-            <p className="text-sm text-gray-400 mt-1">Hola, {patient.name}</p>
+            <p className="text-sm text-gray-400 mt-1">{t.greeting}, {patient.name}</p>
           )}
         </div>
 
@@ -273,9 +276,9 @@ export default function SurveyPage() {
                 <User className="w-7 h-7 text-brand-600" />
               </div>
               <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                ¿Quién del equipo te ha atendido?
+                {t.staffTitle}
               </h2>
-              <p className="text-gray-400 text-sm">Puedes seleccionar más de uno</p>
+              <p className="text-gray-400 text-sm">{t.staffSubtitle}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-2 mb-4">
@@ -298,7 +301,7 @@ export default function SurveyPage() {
               onClick={() => { setStaffMembers([]); handleStaffSubmit() }}
               className="w-full text-center text-sm text-gray-400 mb-4 hover:text-gray-600"
             >
-              No lo recuerdo
+              {t.staffSkip}
             </button>
 
             <button
@@ -307,7 +310,7 @@ export default function SurveyPage() {
               className="btn-primary w-full"
               style={{ backgroundColor: staffMembers.length > 0 ? brandColor : undefined }}
             >
-              Continuar
+              {t.continue}
             </button>
           </div>
         )}
@@ -317,10 +320,10 @@ export default function SurveyPage() {
           <div className="card animate-fadeIn">
             <div className="text-center mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                {clinic?.welcome_message || '¿Cómo ha sido tu experiencia?'}
+                {clinic?.welcome_message || t.scoreTitle}
               </h2>
               <p className="text-gray-500 text-sm">
-                Del 0 al 10, ¿cuánto recomendarías nuestra clínica a un amigo o familiar?
+                {t.scoreSubtitle}
               </p>
             </div>
 
@@ -337,8 +340,8 @@ export default function SurveyPage() {
             </div>
 
             <div className="flex justify-between text-xs text-gray-400 mb-6 px-1">
-              <span>Nada probable</span>
-              <span>Muy probable</span>
+              <span>{t.scoreLow}</span>
+              <span>{t.scoreHigh}</span>
             </div>
 
             <button
@@ -347,7 +350,7 @@ export default function SurveyPage() {
               className="btn-primary w-full"
               style={{ backgroundColor: score !== null ? brandColor : undefined }}
             >
-              {submitting ? 'Enviando...' : 'Continuar'}
+              {submitting ? t.sending : t.continue}
             </button>
           </div>
         )}
@@ -364,10 +367,10 @@ export default function SurveyPage() {
                     <MessageSquare className="w-7 h-7 text-red-600" />
                   </div>
                   <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                    Vaya, parece que algo ha ido mal
+                    {t.feedbackDetractorTitle}
                   </h2>
                   <p className="text-gray-500 text-sm">
-                    Lamentamos lo sucedido. ¿Podría contarnos más cuál ha sido el problema?
+                    {t.feedbackDetractorSubtitle}
                   </p>
                 </>
               ) : (
@@ -378,10 +381,10 @@ export default function SurveyPage() {
                     </div>
                   )}
                   <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                    Muchas gracias por su opinión
+                    {t.feedbackPassiveTitle}
                   </h2>
                   <p className="text-gray-500 text-sm">
-                    ¿Podría decirnos qué tendríamos que mejorar para que nuestra próxima nota sea un 10?
+                    {t.feedbackPassiveSubtitle}
                   </p>
                 </>
               )}
@@ -390,7 +393,7 @@ export default function SurveyPage() {
             <textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
-              placeholder="Escribe aquí tu comentario..."
+              placeholder={t.feedbackPlaceholder}
               rows={4}
               className="input-field resize-none mb-4"
               autoFocus
@@ -402,14 +405,14 @@ export default function SurveyPage() {
               className="btn-primary w-full"
               style={{ backgroundColor: brandColor }}
             >
-              {submitting ? 'Enviando...' : 'Continuar'}
+              {submitting ? t.sending : t.continue}
             </button>
 
             <button
               onClick={() => { setStep(STEPS.PHONE) }}
               className="w-full text-center text-sm text-gray-400 mt-3 hover:text-gray-600"
             >
-              Prefiero no comentar
+              {t.feedbackSkip}
             </button>
           </div>
         )}
@@ -422,10 +425,10 @@ export default function SurveyPage() {
                 <Phone className="w-7 h-7 text-brand-600" />
               </div>
               <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                ¿Querría que le llamemos?
+                {t.phoneTitle}
               </h2>
               <p className="text-gray-500 text-sm">
-                Deje su número de teléfono y alguien del equipo le llamará para tratar de solucionar el problema.
+                {t.phoneSubtitle}
               </p>
             </div>
 
@@ -433,7 +436,7 @@ export default function SurveyPage() {
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="Ej: 612 345 678"
+              placeholder={t.phonePlaceholder}
               className="input-field mb-4"
               autoFocus
             />
@@ -444,14 +447,14 @@ export default function SurveyPage() {
               className="btn-primary w-full"
               style={{ backgroundColor: brandColor }}
             >
-              {submitting ? 'Enviando...' : 'Enviar'}
+              {submitting ? t.sending : t.phoneSend}
             </button>
 
             <button
               onClick={() => handlePhoneSubmit(true)}
               className="w-full text-center text-sm text-gray-400 mt-3 hover:text-gray-600"
             >
-              No, gracias
+              {t.phoneSkip}
             </button>
           </div>
         )}
@@ -463,10 +466,10 @@ export default function SurveyPage() {
               <CheckCircle2 className="w-7 h-7 text-green-600" />
             </div>
             <h2 className="text-lg font-semibold text-gray-800 mb-2">
-              ¡Muchas gracias!
+              {t.thankYouTitle}
             </h2>
             <p className="text-gray-500 text-sm">
-              Su opinión es muy valiosa para nosotros. Nos ayuda a mejorar cada día.
+              {t.thankYouSubtitle}
             </p>
           </div>
         )}
@@ -477,11 +480,10 @@ export default function SurveyPage() {
             <FiveStars />
 
             <h2 className="text-lg font-semibold text-gray-800 mb-2">
-              ¡Muchísimas gracias!
+              {t.reviewTitle}
             </h2>
             <p className="text-gray-500 text-sm mb-6">
-              Nos alegra saber que ha tenido una buena experiencia.
-              Nos ayudan mucho sus reseñas de 5 estrellas. ¿Podría dejarnos una reseña en Google?
+              {t.reviewSubtitle}
             </p>
 
             {clinic?.google_review_url ? (
@@ -491,18 +493,18 @@ export default function SurveyPage() {
                 style={{ backgroundColor: brandColor }}
               >
                 <Star className="w-5 h-5" />
-                Dejar reseña en Google
+                {t.reviewButton}
                 <ExternalLink className="w-4 h-4" />
               </button>
             ) : (
-              <p className="text-gray-400 text-sm">Enlace de reseñas no configurado.</p>
+              <p className="text-gray-400 text-sm">{t.reviewNotConfigured}</p>
             )}
 
             <button
               onClick={() => setStep(STEPS.THANK_YOU)}
               className="w-full text-center text-sm text-gray-400 mt-3 hover:text-gray-600"
             >
-              Prefiero no hacerlo ahora
+              {t.reviewSkip}
             </button>
           </div>
         )}
@@ -510,7 +512,7 @@ export default function SurveyPage() {
         {/* Footer */}
         <div className="flex items-center justify-center gap-1.5 mt-6 text-xs text-gray-300">
           <BarChart3 className="w-3.5 h-3.5" />
-          <span>Powered by <span className="font-medium">FisioReferentes</span></span>
+          <span>{t.poweredBy} <span className="font-medium">FisioReferentes</span></span>
         </div>
       </div>
     </div>
